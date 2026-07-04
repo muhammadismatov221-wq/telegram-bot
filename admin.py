@@ -1,3 +1,4 @@
+import asyncio
 from aiogram import Router, F, Bot
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
@@ -7,6 +8,9 @@ import keyboards as kb
 from config import ADMIN_ID, MINI_QUIZ_EVERY, USERS_PAGE_SIZE
 
 router = Router()
+
+# ID-ҳои админе, ки ҳозир мунтазири фиристодани паёми умумӣ (broadcast) ҳастанд
+broadcast_waiting: set[int] = set()
 
 STATUS_LABEL = {
     "pending": "⏳ Интизорӣ",
@@ -242,3 +246,67 @@ async def admin_set_lang(call: CallbackQuery, bot: Bot):
 
     user = db.get_user(user_id)
     await call.message.edit_text(format_user_card(user), reply_markup=kb.user_detail_kb(user))
+
+
+# ---------------------- Паёми умумӣ (broadcast) ----------------------
+
+@router.message(Command("broadcast"))
+async def broadcast_start_cmd(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    broadcast_waiting.add(message.from_user.id)
+    await message.answer(
+        "📢 Паёми худро фиристед (матн, акс, видео, овоз, файл ва ғ.) — "
+        "ба ҳамаи корбарон фиристода мешавад.\n\nБарои бекор кардан: /cancel"
+    )
+
+
+@router.callback_query(F.data == "admin_broadcast")
+async def broadcast_start_cb(call: CallbackQuery):
+    if not admin_only(call):
+        return
+    broadcast_waiting.add(call.from_user.id)
+    await call.message.edit_text(
+        "📢 Паёми худро фиристед (матн, акс, видео, овоз, файл ва ғ.) — "
+        "ба ҳамаи корбарон фиристода мешавад.\n\nБарои бекор кардан: /cancel"
+    )
+
+
+@router.message(Command("cancel"))
+async def broadcast_cancel_cmd(message: Message):
+    if message.from_user.id == ADMIN_ID and message.from_user.id in broadcast_waiting:
+        broadcast_waiting.discard(message.from_user.id)
+        await message.answer("Бекор шуд.")
+
+
+def _is_broadcast_content(message: Message) -> bool:
+    if message.from_user.id != ADMIN_ID:
+        return False
+    if message.from_user.id not in broadcast_waiting:
+        return False
+    if message.text and message.text.startswith("/"):
+        return False
+    return True
+
+
+@router.message(_is_broadcast_content)
+async def broadcast_send(message: Message, bot: Bot):
+    broadcast_waiting.discard(message.from_user.id)
+    users = db.get_all_users()
+
+    status_msg = await message.answer(f"⏳ Фиристодан ба {len(users)} корбар оғоз шуд...")
+
+    sent, failed = 0, 0
+    for u in users:
+        try:
+            await bot.copy_message(
+                chat_id=u["user_id"],
+                from_chat_id=message.chat.id,
+                message_id=message.message_id,
+            )
+            sent += 1
+        except Exception:
+            failed += 1
+        await asyncio.sleep(0.05)  # барои пешгирии маҳдудияти Telegram (flood limit)
+
+    await status_msg.edit_text(f"✅ Фиристода шуд: {sent}\n❌ Нашуд (баста/ноактив): {failed}")

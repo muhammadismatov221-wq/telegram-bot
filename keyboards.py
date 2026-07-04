@@ -45,6 +45,7 @@ def admin_menu_kb() -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     kb.button(text="👥 Ҳамаи корбарон", callback_data="admin_users_0")
     kb.button(text="⏳ Дархостҳои интизорӣ", callback_data="admin_pending_0")
+    kb.button(text="📢 Паёми умумӣ", callback_data="admin_broadcast")
     kb.adjust(1)
     return kb.as_markup()
 
