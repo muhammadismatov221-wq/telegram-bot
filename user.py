@@ -35,6 +35,10 @@ async def cmd_start(message: Message, bot: Bot):
         await message.answer("Дархости ту рад шуда буд. Бо админ тамос гир.")
         return
 
+    if user["status"] == "blocked":
+        await message.answer("🚫 Дастрасии ту баста шудааст. Бо админ тамос гир.")
+        return
+
 
 @router.message(F.text.lower() == "дарс")
 async def text_lesson(message: Message, bot: Bot):
@@ -51,6 +55,7 @@ async def notify_admin_new_user(bot: Bot, user_id: int, full_name: str, username
 async def choose_language(call: CallbackQuery, bot: Bot):
     lang = "ru" if call.data == "lang_ru" else "en"
     db.set_language(call.from_user.id, lang)
+    db.set_lang_selected(call.from_user.id)
     await call.message.edit_text(f"Забон интихоб шуд: {'Русӣ' if lang=='ru' else 'Англисӣ'} ✅")
     await send_next_lesson_or_test(call.from_user.id, bot)
 
@@ -58,7 +63,10 @@ async def choose_language(call: CallbackQuery, bot: Bot):
 async def send_next_lesson_or_test(user_id: int, bot: Bot):
     user = db.get_user(user_id)
     if not user or user["status"] != "approved":
-        await bot.send_message(user_id, "Ту ҳанӯз тасдиқ нашудаӣ.")
+        if user and user["status"] == "blocked":
+            await bot.send_message(user_id, "🚫 Дастрасии ту баста шудааст. Бо админ тамос гир.")
+        else:
+            await bot.send_message(user_id, "Ту ҳанӯз тасдиқ нашудаӣ.")
         return
 
     current = user["current_lesson"]

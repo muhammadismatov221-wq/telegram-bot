@@ -1,7 +1,7 @@
 import json
 import re
 from groq import Groq
-from config import GROQ_API_KEY, GROQ_MODEL, WORDS_PER_LESSON
+from config import GROQ_API_KEY, GROQ_MODEL, WORDS_PER_LESSON, MINI_QUIZ_QUESTIONS, BIG_TEST_QUESTIONS
 
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -34,7 +34,7 @@ def generate_lesson(lesson_number: int, language: str) -> dict:
 
 def generate_quiz(words: list, test_type: str) -> dict:
     words_str = ", ".join(w["word"] for w in words)
-    n_questions = min(len(words), 10) if test_type == "mini" else min(len(words), 20)
+    n_questions = min(len(words), MINI_QUIZ_QUESTIONS) if test_type == "mini" else min(len(words), BIG_TEST_QUESTIONS)
     prompt = f"""
 Дар асоси калимаҳои зерин {n_questions} саволи тести чандинтанобаро тартиб деҳ (4 вариант ҳар савол, як ҷавоби дуруст):
 Калимаҳо: {words_str}

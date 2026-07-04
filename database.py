@@ -26,9 +26,15 @@ def init_db():
                 status TEXT DEFAULT 'pending',
                 language TEXT DEFAULT 'ru',
                 current_lesson INTEGER DEFAULT 0,
-                awaiting TEXT DEFAULT NULL
+                awaiting TEXT DEFAULT NULL,
+                lang_selected INTEGER DEFAULT 0
             )
         """)
+        # Миграция барои базаҳои кӯҳна (агар сутун вуҷуд надошта бошад)
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN lang_selected INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
         c.execute("""
             CREATE TABLE IF NOT EXISTS lessons_cache (
                 lesson_number INTEGER,
@@ -94,6 +100,19 @@ def get_pending_users():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM users WHERE status='pending'").fetchall()
         return [dict(r) for r in rows]
+
+
+def get_all_users():
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM users ORDER BY (status='pending') DESC, user_id DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def set_lang_selected(user_id):
+    with get_conn() as conn:
+        conn.execute("UPDATE users SET lang_selected=1 WHERE user_id=?", (user_id,))
 
 
 def get_cached_lesson(lesson_number, language):

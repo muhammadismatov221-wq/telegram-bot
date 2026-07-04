@@ -9,6 +9,9 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
 TOTAL_LESSONS = 600
-MINI_QUIZ_EVERY = 10   # ҳар 10 дарс - тести хурд
-BIG_TEST_EVERY = 100   # ҳар 100 дарс - тести калон
+MINI_QUIZ_EVERY = 10        # ҳар 10 дарс - тести хурд
+BIG_TEST_EVERY = 100        # ҳар 100 дарс - тести калон
 WORDS_PER_LESSON = 10
+MINI_QUIZ_QUESTIONS = 10    # шумораи саволҳои тести хурд
+BIG_TEST_QUESTIONS = 35     # шумораи саволҳои тести калон
+USERS_PAGE_SIZE = 8         # шумораи корбарон дар як саҳифаи панели админ
