@@ -1,10 +1,11 @@
 import json
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import CommandStart
 
 import database as db
 import groq_service as gs
+import tts_service as tts
 import keyboards as kb
 from config import ADMIN_ID, MINI_QUIZ_EVERY, BIG_TEST_EVERY, TOTAL_LESSONS
 
@@ -97,6 +98,15 @@ async def send_lesson(user_id: int, lesson_number: int, language: str, bot: Bot)
 
     db.set_current_lesson(user_id, lesson_number)
     await bot.send_message(user_id, text, reply_markup=kb.lesson_done_kb(), parse_mode="Markdown")
+
+    if language == "en":
+        audio_path = tts.generate_lesson_audio(lesson_number, language, content["words"])
+        if audio_path:
+            await bot.send_audio(
+                user_id,
+                FSInputFile(audio_path),
+                caption="🔊 Талаффузи калимаҳои дарс",
+            )
 
 
 @router.callback_query(F.data == "lesson_done")
